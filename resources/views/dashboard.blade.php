@@ -12,6 +12,9 @@
                     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
                         <h3 class="text-lg font-bold">Manage Data Sources</h3>
                         <div class="flex gap-2">
+                            <a href="{{ route('admin.settings.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-md text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+                                ⚙️ Settings
+                            </a>
                             <a href="{{ route('admin.source-types.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-md text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
                                 Source Types
                             </a>

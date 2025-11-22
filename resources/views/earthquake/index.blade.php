@@ -1349,6 +1349,23 @@
             `;
             
             try {
+                // First, get the API key from backend
+                const apiKeyResponse = await fetch('/api/settings/news-api-key');
+                const apiKeyData = await apiKeyResponse.json();
+                const apiKey = apiKeyData.api_key;
+                
+                if (!apiKey) {
+                    newsContainer.innerHTML = `
+                        <div class="news-loading">
+                            <p>News API key not configured.</p>
+                            <p style="margin-top: 0.5rem; font-size: 0.875rem;">
+                                Please configure the NewsAPI key in the admin settings to enable news features.
+                            </p>
+                        </div>
+                    `;
+                    return;
+                }
+                
                 // Extract location keywords
                 const locationMatch = location?.match(/([A-Za-z\s]+)$/);
                 const searchLocation = locationMatch ? locationMatch[1].trim() : 'earthquake';
@@ -1356,12 +1373,8 @@
                 // Search for earthquake news
                 const searchQuery = `earthquake ${searchLocation} magnitude ${magnitude.toFixed(1)}`;
                 
-                // Using News API (you'll need to get a free API key from newsapi.org)
-                // For demo purposes, I'll use a mock implementation
-                // Replace with actual API call when you have a key
-                
                 const response = await fetch(
-                    `https://newsapi.org/v2/everything?q=${encodeURIComponent(searchQuery)}&sortBy=publishedAt&pageSize=5&apiKey=YOUR_API_KEY_HERE`
+                    `https://newsapi.org/v2/everything?q=${encodeURIComponent(searchQuery)}&sortBy=publishedAt&pageSize=5&apiKey=${apiKey}`
                 );
                 
                 if (!response.ok) {
@@ -1389,6 +1402,8 @@
             } catch (error) {
                 console.error('Error fetching news:', error);
                 // Show fallback with general earthquake news search
+                const searchLocation = location?.match(/([A-Za-z\s]+)$/)?.[1]?.trim() || 'earthquake';
+                const searchQuery = `earthquake ${searchLocation} magnitude ${magnitude.toFixed(1)}`;
                 newsContainer.innerHTML = `
                     <div class="news-loading">
                         <p>Unable to load news at this time.</p>
