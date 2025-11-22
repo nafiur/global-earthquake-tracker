@@ -1,4 +1,4 @@
-# Global Earthquake Tracker - Laravel Edition
+# Global Earhquake Tracker - Laravel Edition
 
 This project is a modernization of a static HTML/JS earthquake tracker, migrated to a robust **Laravel 12** application. It leverages **Laravel Breeze** for scaffolding, **Tailwind CSS** for a premium UI, and features a dynamic **Admin Dashboard** to manage data sources.
 

@@ -3,135 +3,207 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Global Earthquake Intelligence</title>
+    <title>Global Earhquake Console</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         :root {
             color-scheme: dark;
+            --surface: rgba(3, 7, 18, 0.75);
+            --stroke: rgba(148, 163, 184, 0.15);
+            --primary: #7dd3fc;
+            --accent: #a855f7;
         }
         body {
-            background: radial-gradient(circle at top, rgba(79, 70, 229, 0.25), transparent 55%),
-                       radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.25), transparent 40%),
-                       #020617;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #010409;
+            color: #e2e8f0;
+            margin: 0;
         }
-        .glass-panel {
-            background: linear-gradient(135deg, rgba(15,23,42,0.75), rgba(15,23,42,0.55));
-            border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 25px 50px -12px rgba(15,23,42,0.35);
-            backdrop-filter: blur(18px);
+        .starfield::before,
+        .starfield::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(125,211,252,0.4) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.15;
+            animation: drift 50s linear infinite;
         }
-        .chip-toggle {
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 9999px;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: rgb(203 213 225);
+        .starfield::after {
+            opacity: 0.25;
+            background-size: 80px 80px;
+            animation-duration: 80s;
+        }
+        @keyframes drift {
+            from { transform: translate3d(-10px, -10px, 0); }
+            to { transform: translate3d(10px, 10px, 0); }
+        }
+        .glass-pane {
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--stroke);
+            border-radius: 28px;
+            box-shadow: 0 40px 120px rgba(2, 6, 23, 0.65);
+        }
+        .control-dock select,
+        .control-dock input {
+            width: 100%;
+            border-radius: 18px;
+            border: 1px solid var(--stroke);
+            background: rgba(15, 23, 42, 0.75);
+            color: #f8fafc;
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            transition: border 0.25s ease, transform 0.25s ease;
+        }
+        .control-dock select:focus,
+        .control-dock input:focus {
+            outline: none;
+            border-color: rgba(125, 211, 252, 0.7);
+            transform: translateY(-2px);
+        }
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid rgba(125, 211, 252, 0.2);
+            background: rgba(15, 23, 42, 0.6);
+            font-size: 0.75rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: rgba(226, 232, 240, 0.85);
+        }
+        .toggle-pill {
+            border-radius: 999px;
+            border: 1px solid var(--stroke);
+            padding: 0.35rem 1.2rem;
+            font-size: 0.87rem;
+            color: rgba(226,232,240,0.85);
             background: transparent;
-            transition: all 0.2s ease;
+            transition: all 0.25s ease;
             cursor: pointer;
         }
-        .chip-toggle.active {
-            background: linear-gradient(120deg, #6366f1, #8b5cf6);
+        .toggle-pill.active {
+            background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(168, 85, 247, 0.3));
+            border-color: rgba(125, 211, 252, 0.4);
             color: #fff;
-            border-color: transparent;
-            box-shadow: 0 10px 25px rgba(99,102,241,0.35);
+            box-shadow: 0 15px 40px rgba(79, 70, 229, 0.35);
         }
-        .view-toggle {
-            border-radius: 9999px;
-            padding: 0.5rem 1rem;
-            border: 1px solid rgba(255,255,255,0.15);
-            color: rgba(226,232,240,0.8);
-            transition: all 0.2s ease;
-            background: transparent;
-            cursor: pointer;
+        .data-capsule {
+            border-radius: 24px;
+            border: 1px solid var(--stroke);
+            background: rgba(2, 6, 23, 0.9);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
         }
-        .view-toggle.active {
-            background: rgba(99,102,241,0.15);
-            border-color: rgba(99,102,241,0.5);
-            color: #fff;
+        .timeline {
+            position: relative;
+            padding-left: 2.5rem;
         }
-        @keyframes shimmer {
-            0% { background-position: -468px 0; }
-            100% { background-position: 468px 0; }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 1rem;
+            width: 2px;
+            background: linear-gradient(to bottom, rgba(125, 211, 252, 0.4), rgba(168, 85, 247, 0.15));
         }
-        .skeleton {
-            animation: shimmer 1.25s infinite linear;
-            background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.05) 75%);
-            background-size: 400% 100%;
+        .timeline-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #0ea5e9;
+            border: 3px solid rgba(14, 165, 233, 0.3);
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.6);
+        }
+        .event-card {
+            border-radius: 24px;
+            padding: 1.5rem;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.65));
+            transition: transform 0.25s ease, border 0.25s ease;
+        }
+        .event-card:hover {
+            transform: translate3d(4px, -3px, 0);
+            border-color: rgba(125, 211, 252, 0.4);
+        }
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .status-bar span {
+            border-radius: 999px;
+            border: 1px solid rgba(125,211,252,0.25);
+            padding: 0.4rem 0.9rem;
+            color: rgba(226,232,240,0.85);
         }
     </style>
 </head>
-<body class="font-sans text-slate-100 min-h-screen relative overflow-x-hidden">
+<body class="starfield relative">
     @php
         $sourceLabel = $activeSourceName ?? 'Global Live Feed';
         $sourceTypeLabel = $activeSourceType ?? 'USGS / EMSC Network';
     @endphp
-    <div class="absolute inset-0 pointer-events-none">
-        <div class="absolute -top-32 -right-10 w-72 h-72 bg-indigo-500/40 blur-[120px]"></div>
-        <div class="absolute top-1/3 -left-16 w-80 h-80 bg-cyan-500/30 blur-[120px]"></div>
-    </div>
 
-    <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-        <section class="glass-panel rounded-3xl p-8">
-            <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div class="space-y-4">
-                    <div class="inline-flex items-center gap-2 text-sm text-slate-300">
-                        <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Live Seismic Intelligence
-                    </div>
-                    <div>
-                        <h1 class="text-4xl sm:text-5xl font-semibold tracking-tight text-white">Global Earthquake Intelligence Hub</h1>
-                        <p class="text-slate-300 mt-3 max-w-2xl">Monitor worldwide seismic activity in real-time with advanced filtering, contextual insights, and instant proximity alerts.</p>
-                    </div>
-                    <div class="flex flex-wrap gap-3 text-sm">
-                        <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10">Active Source: <strong class="ml-1 text-white/90">{{ $sourceLabel }}</strong></span>
-                        <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10">Network: <strong class="ml-1 text-white/90">{{ $sourceTypeLabel }}</strong></span>
-                        <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10">Last sync <span id="lastUpdated" class="font-semibold text-white/90">--</span></span>
-                    </div>
-                    <div id="filterSummary" class="flex flex-wrap gap-2"></div>
+    <main class="relative z-10 max-w-6xl mx-auto px-6 py-12 space-y-8">
+        <header class="glass-pane p-8 grid gap-6 lg:grid-cols-[1.25fr,0.75fr]">
+            <div class="space-y-4">
+                <span class="chip">Global Earhquake Console</span>
+                <h1 class="text-4xl md:text-5xl font-semibold leading-tight">Realtime Earthquake Intelligence Board</h1>
+                <p class="text-slate-300 max-w-2xl">Cut through noise with a cinematic seismic feed. Compare magnitudes, explore regional stress, and anchor decisions with live telemetry.</p>
+                <div class="status-bar">
+                    <span>Active Source · {{ $sourceLabel }}</span>
+                    <span>Network · {{ $sourceTypeLabel }}</span>
+                    <span>Auto Sync · 5m cadence</span>
                 </div>
-                <div class="glass-panel rounded-2xl p-6 w-full lg:w-80">
-                    <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Quick Actions</p>
-                    <div class="mt-4 flex flex-col gap-3">
-                        <button id="refreshBtn" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-3 font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:-translate-y-0.5">
-                            <span>Refresh feed</span>
-                        </button>
-                        <button id="nearMeBtn" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 px-4 py-3 font-semibold text-white transition hover:border-white/30">
-                            <span>Near me mode</span>
-                        </button>
-                        <div class="text-sm text-slate-400">
-                            Auto refreshes every 5 minutes.
-                        </div>
+            </div>
+            <div class="relative">
+                <div class="absolute inset-0 blur-3xl bg-gradient-to-br from-sky-500/30 to-purple-500/30"></div>
+                <div class="relative glass-pane p-6 rounded-3xl h-full flex flex-col gap-4">
+                    <p class="text-sm uppercase tracking-[0.3em] text-slate-400">Mission Controls</p>
+                    <div class="flex flex-col gap-3">
+                        <button id="refreshBtn" class="toggle-pill active text-center">Pulse Refresh</button>
+                        <button id="nearMeBtn" class="toggle-pill text-center">Lock Near Me</button>
+                        <p class="text-xs text-slate-400">Tip: Stay in grid view for macro or switch to stream for operator review.</p>
                     </div>
                 </div>
             </div>
-        </section>
+        </header>
 
-        <section class="glass-panel rounded-3xl p-6 space-y-6">
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div class="space-y-2">
-                    <label for="timeRange" class="text-sm text-slate-400">Time Range</label>
-                    <select id="timeRange" class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:border-indigo-400 focus:ring-0">
+        <section class="glass-pane p-6 space-y-6">
+            <div class="control-dock grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <label class="text-xs uppercase tracking-wider text-slate-400">Time Range</label>
+                    <select id="timeRange">
                         <option value="hour">Past Hour</option>
                         <option value="day" selected>Past Day</option>
                         <option value="week">Past Week</option>
                         <option value="month">Past Month</option>
                     </select>
                 </div>
-                <div class="space-y-2">
-                    <label for="minMagnitude" class="text-sm text-slate-400">Minimum Magnitude</label>
-                    <select id="minMagnitude" class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:border-indigo-400 focus:ring-0">
-                        <option value="all">All events</option>
+                <div>
+                    <label class="text-xs uppercase tracking-wider text-slate-400">Minimum Magnitude</label>
+                    <select id="minMagnitude">
+                        <option value="all">All</option>
                         <option value="1">1.0+</option>
                         <option value="2.5">2.5+</option>
                         <option value="4.5" selected>4.5+</option>
                         <option value="6">6.0+</option>
                     </select>
                 </div>
-                <div class="space-y-2">
-                    <label for="region" class="text-sm text-slate-400">Region Focus</label>
-                    <select id="region" class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:border-indigo-400 focus:ring-0">
+                <div>
+                    <label class="text-xs uppercase tracking-wider text-slate-400">Region Lens</label>
+                    <select id="region">
                         <option value="global">Global</option>
                         <option value="asia">Asia</option>
                         <option value="europe">Europe</option>
@@ -143,46 +215,50 @@
                         <option value="caribbean">Caribbean</option>
                     </select>
                 </div>
-                <div class="space-y-2">
-                    <label class="text-sm text-slate-400">Search</label>
-                    <input id="searchTerm" type="text" placeholder="Filter by location keyword" class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:border-indigo-400 focus:ring-0" />
+                <div>
+                    <label class="text-xs uppercase tracking-wider text-slate-400">Search Keyword</label>
+                    <input id="searchTerm" type="text" placeholder="e.g. Alaska, Mexico" />
                 </div>
             </div>
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex flex-wrap gap-2">
-                    <span class="text-xs uppercase tracking-widest text-slate-500">Sort</span>
-                    <button id="sortMagnitude" class="chip-toggle active">Highest magnitude</button>
-                    <button id="sortRecency" class="chip-toggle">Most recent</button>
+                <div class="flex flex-wrap gap-3">
+                    <span class="chip">Sort feed</span>
+                    <button id="sortMagnitude" class="toggle-pill active">Magnitude</button>
+                    <button id="sortRecency" class="toggle-pill">Recency</button>
                 </div>
-                <div class="flex items-center gap-3">
-                    <span class="text-xs uppercase tracking-widest text-slate-500">View</span>
-                    <button id="viewGrid" class="view-toggle active border border-white/10 rounded-2xl px-4 py-2 text-sm">Grid</button>
-                    <button id="viewList" class="view-toggle border border-white/10 rounded-2xl px-4 py-2 text-sm">List</button>
+                <div class="flex flex-wrap gap-3">
+                    <span class="chip">View</span>
+                    <button id="viewGrid" class="toggle-pill active">Grid Overview</button>
+                    <button id="viewList" class="toggle-pill">Stream</button>
                 </div>
+            </div>
+            <div id="filterSummary" class="flex flex-wrap gap-3"></div>
+        </section>
+
+        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4" id="stats"></section>
+
+        <section>
+            <div class="glass-pane p-6 rounded-3xl">
+                <div class="flex flex-col gap-2 mb-4">
+                    <h2 class="text-xl font-semibold">Signal Spotlights</h2>
+                    <p class="text-slate-400 text-sm">Fast context snapshots. Use them for quick triage before drilling into specifics.</p>
+                </div>
+                <div class="grid gap-4 md:grid-cols-3" id="insights"></div>
             </div>
         </section>
 
-        <div id="locationStatus" class="hidden rounded-2xl border border-white/10 bg-white/5 p-4 text-sm"></div>
-
-        <section>
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4" id="stats"></div>
-        </section>
-
-        <section>
-            <div class="grid gap-4 md:grid-cols-3" id="insights"></div>
-        </section>
+        <div id="locationStatus" class="hidden glass-pane p-4 text-sm text-slate-200"></div>
 
         <section class="space-y-4">
-            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h2 class="text-2xl font-semibold text-white">Live Events</h2>
-                    <p class="text-slate-400 text-sm">Showing <span id="liveCount" class="font-semibold">0</span> earthquakes that match your filters.</p>
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-3xl font-semibold">Live Stream</h2>
+                    <span class="chip">Tracking <span id="liveCount">0</span> events</span>
                 </div>
+                <p class="text-slate-400 text-sm">Scroll through the kinetic timeline or switch to grid view for macro comparisons.</p>
             </div>
-            <div id="content" class="space-y-4">
-                <div class="glass-panel rounded-2xl p-6 text-center text-slate-300">
-                    Loading live data...
-                </div>
+            <div id="content" class="timeline space-y-4">
+                <div class="glass-pane p-6 text-center text-slate-300">Loading telemetry...</div>
             </div>
         </section>
     </main>
@@ -198,11 +274,9 @@
 
         const refreshBtn = document.getElementById('refreshBtn');
         const nearMeBtn = document.getElementById('nearMeBtn');
-        const locationStatus = document.getElementById('locationStatus');
         const statsEl = document.getElementById('stats');
         const insightsEl = document.getElementById('insights');
         const contentEl = document.getElementById('content');
-        const lastUpdatedEl = document.getElementById('lastUpdated');
         const liveCountEl = document.getElementById('liveCount');
         const searchInput = document.getElementById('searchTerm');
         const filterSummaryEl = document.getElementById('filterSummary');
@@ -210,6 +284,18 @@
         const sortRecencyBtn = document.getElementById('sortRecency');
         const viewGridBtn = document.getElementById('viewGrid');
         const viewListBtn = document.getElementById('viewList');
+        const locationStatus = document.getElementById('locationStatus');
+
+        const loaderCard = `
+            <div class="glass-pane p-5">
+                <div class="skeleton h-6 w-1/3 rounded"></div>
+                <div class="mt-4 space-y-3">
+                    <div class="skeleton h-4 w-full rounded"></div>
+                    <div class="skeleton h-4 w-3/4 rounded"></div>
+                    <div class="skeleton h-4 w-2/3 rounded"></div>
+                </div>
+            </div>
+        `;
 
         const regions = {
             global: null,
@@ -223,16 +309,11 @@
             caribbean: { minLat: 10, maxLat: 27, minLon: -85, maxLon: -60 }
         };
 
-        const loaderCard = `
-            <div class="glass-panel rounded-2xl p-6">
-                <div class="skeleton h-6 w-1/3 rounded"></div>
-                <div class="mt-4 space-y-3">
-                    <div class="skeleton h-4 w-full rounded"></div>
-                    <div class="skeleton h-4 w-5/6 rounded"></div>
-                    <div class="skeleton h-4 w-2/3 rounded"></div>
-                </div>
-            </div>
-        `;
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value;
+            return div.innerHTML;
+        }
 
         function isInRegion(lat, lon, region) {
             if (region === 'global' || !regions[region]) return true;
@@ -246,7 +327,7 @@
             }
 
             refreshBtn.disabled = true;
-            refreshBtn.classList.add('opacity-60');
+            refreshBtn.classList.add('active');
 
             try {
                 const timeRange = document.getElementById('timeRange').value;
@@ -260,20 +341,12 @@
 
                 const data = await response.json();
                 earthquakes = data.features || [];
-                lastUpdated = new Date();
-                updateLastUpdated();
                 applyFilters();
             } catch (error) {
                 console.error(error);
-                contentEl.innerHTML = `
-                    <div class="glass-panel rounded-2xl p-6 text-center text-red-200 border border-red-500/30">
-                        <p class="font-semibold">Unable to retrieve earthquake data.</p>
-                        <p class="text-sm text-red-300 mt-2">Please check your connection or try again shortly.</p>
-                    </div>
-                `;
+                contentEl.innerHTML = `<div class="glass-pane p-6 text-center text-red-200">Feed temporarily unavailable. Please retry.</div>`;
             } finally {
                 refreshBtn.disabled = false;
-                refreshBtn.classList.remove('opacity-60');
             }
         }
 
@@ -306,190 +379,125 @@
             updateFilterSummary();
         }
 
-        function displayStats(earthquakesList) {
-            if (!earthquakesList.length) {
-                statsEl.innerHTML = `<div class="glass-panel rounded-2xl p-6 text-center text-slate-300">No data for current filters.</div>`;
+        function displayStats(list) {
+            if (!list.length) {
+                statsEl.innerHTML = `<div class="glass-pane p-6 text-center text-slate-300 md:col-span-2 xl:col-span-4">No telemetry for this combination.</div>`;
                 return;
             }
-
-            const magnitudes = earthquakesList.map(e => e.properties.mag || 0);
-            const depths = earthquakesList.map(e => e.geometry.coordinates[2] || 0);
-            const total = earthquakesList.length;
-            const highest = Math.max(...magnitudes).toFixed(1);
-            const average = (magnitudes.reduce((a, b) => a + b, 0) / (magnitudes.length || 1)).toFixed(1);
-            const major = earthquakesList.filter(e => (e.properties.mag || 0) >= 6).length;
-            const shallow = earthquakesList.filter(e => (e.geometry.coordinates[2] || 0) <= 70).length;
-            const deep = earthquakesList.filter(e => (e.geometry.coordinates[2] || 0) >= 300).length;
-
+            const magnitudes = list.map(e => e.properties.mag || 0);
+            const depths = list.map(e => e.geometry.coordinates[2] || 0);
             const stats = [
-                { label: 'Total Events', value: total, detail: 'matching filters' },
-                { label: 'Highest Magnitude', value: highest, detail: 'most energetic event' },
-                { label: 'Average Magnitude', value: average, detail: 'across all events' },
-                { label: 'Major (6.0+)', value: major, detail: 'strong or greater' },
-                { label: 'Shallow (<70km)', value: shallow, detail: 'potentially damaging' },
-                { label: 'Deep (>300km)', value: deep, detail: 'subduction zone activity' },
-                { label: 'Average Depth', value: `${(depths.reduce((a,b)=>a+b,0)/ (depths.length || 1)).toFixed(0)} km`, detail: 'from focus point' },
-                { label: 'Active Mode', value: isNearMeMode ? 'Near Me' : sortMode === 'magnitude' ? 'Top Magnitude' : 'Most Recent', detail: 'current prioritization' },
+                { label: 'Events', value: list.length, detail: 'matching filters' },
+                { label: 'Peak magnitude', value: Math.max(...magnitudes).toFixed(1), detail: 'highest energy' },
+                { label: 'Average magnitude', value: (magnitudes.reduce((a,b)=>a+b,0) / magnitudes.length).toFixed(1), detail: 'dataset mean' },
+                { label: 'Average depth', value: `${(depths.reduce((a,b)=>a+b,0)/depths.length).toFixed(0)} km`, detail: 'focus depth' }
             ];
-
             statsEl.innerHTML = stats.map(stat => `
-                <div class="glass-panel rounded-2xl p-5">
-                    <p class="text-xs uppercase tracking-widest text-slate-400">${stat.label}</p>
-                    <p class="text-3xl font-semibold text-white mt-2">${stat.value}</p>
-                    <p class="text-sm text-slate-400">${stat.detail}</p>
+                <div class="data-capsule">
+                    <span class="text-xs uppercase tracking-[0.3em] text-slate-400">${stat.label}</span>
+                    <span class="text-3xl font-semibold">${stat.value}</span>
+                    <span class="text-slate-400 text-sm">${stat.detail}</span>
                 </div>
             `).join('');
         }
 
-        function displayInsights(earthquakesList) {
-            if (!earthquakesList.length) {
-                insightsEl.innerHTML = `<div class="glass-panel rounded-2xl p-6 text-center text-slate-300 md:col-span-3">Insights will appear once data loads.</div>`;
+        function displayInsights(list) {
+            if (!list.length) {
+                insightsEl.innerHTML = `<div class="glass-pane p-4 text-center text-slate-300 md:col-span-3">Awaiting data...</div>`;
                 return;
             }
-
-            const sortedByMag = [...earthquakesList].sort((a, b) => (b.properties.mag || 0) - (a.properties.mag || 0));
-            const sortedByTime = [...earthquakesList].sort((a, b) => (b.properties.time || 0) - (a.properties.time || 0));
-            const sortedByDepth = [...earthquakesList].sort((a, b) => (b.geometry.coordinates[2] || 0) - (a.geometry.coordinates[2] || 0));
-
-            const insights = [
-                {
-                    label: 'Strongest Event',
-                    highlight: `${(sortedByMag[0].properties.mag || 0).toFixed(1)} Mw`,
-                    place: sortedByMag[0].properties.place || 'Unknown location',
-                    meta: formatTime(sortedByMag[0].properties.time)
-                },
-                {
-                    label: 'Newest Event',
-                    highlight: formatRelativeTime(sortedByTime[0].properties.time),
-                    place: sortedByTime[0].properties.place || 'Unknown location',
-                    meta: `${(sortedByTime[0].properties.mag || 0).toFixed(1)} Mw`
-                },
-                {
-                    label: 'Shallow Highlight',
-                    highlight: `${sortedByDepth[0].geometry.coordinates[2]?.toFixed(1) || 0} km`,
-                    place: sortedByDepth[0].properties.place || 'Unknown location',
-                    meta: `${(sortedByDepth[0].properties.mag || 0).toFixed(1)} Mw`
-                }
+            const sortedByMag = [...list].sort((a,b)=>(b.properties.mag||0)-(a.properties.mag||0));
+            const sortedByTime = [...list].sort((a,b)=>(b.properties.time||0)-(a.properties.time||0));
+            const sortedByDepth = [...list].sort((a,b)=>(a.geometry.coordinates[2]||0)-(b.geometry.coordinates[2]||0));
+            const cards = [
+                { title: 'Strongest Pulse', highlight: `${(sortedByMag[0].properties.mag||0).toFixed(1)} Mw`, place: sortedByMag[0].properties.place || 'Unknown', meta: formatTime(sortedByMag[0].properties.time) },
+                { title: 'Newest Activity', highlight: formatRelative(sortedByTime[0].properties.time), place: sortedByTime[0].properties.place || 'Unknown', meta: `${(sortedByTime[0].properties.mag||0).toFixed(1)} Mw` },
+                { title: 'Shallow Trigger', highlight: `${sortedByDepth[0].geometry.coordinates[2]?.toFixed(1) || 0} km`, place: sortedByDepth[0].properties.place || 'Unknown', meta: `${(sortedByDepth[0].properties.mag||0).toFixed(1)} Mw` }
             ];
-
-            insightsEl.innerHTML = insights.map(insight => `
-                <div class="glass-panel rounded-2xl p-5">
-                    <p class="text-xs uppercase tracking-widest text-slate-400">${insight.label}</p>
-                    <p class="text-3xl font-semibold text-white mt-2">${insight.highlight}</p>
-                    <p class="text-sm text-white/80 mt-1">${insight.place}</p>
-                    <p class="text-xs text-slate-400 mt-1">${insight.meta}</p>
-                </div>
+            insightsEl.innerHTML = cards.map(card => `
+                <article class="glass-pane p-5 rounded-2xl">
+                    <p class="text-xs uppercase tracking-[0.3em] text-slate-400">${card.title}</p>
+                    <h3 class="text-3xl font-semibold mt-2">${card.highlight}</h3>
+                    <p class="text-white/90">${card.place}</p>
+                    <p class="text-slate-400 text-sm">${card.meta}</p>
+                </article>
             `).join('');
         }
 
-        function displayEarthquakes(earthquakesList) {
-            if (!earthquakesList.length) {
-                contentEl.innerHTML = `
-                    <div class="glass-panel rounded-2xl p-6 text-center text-slate-300">
-                        No earthquakes match your criteria right now.
-                    </div>
-                `;
+        function displayEarthquakes(list) {
+            if (!list.length) {
+                contentEl.innerHTML = `<div class="glass-pane p-6 text-center text-slate-300">No earthquakes in this slice.</div>`;
                 return;
             }
-
             const layoutClass = viewMode === 'grid' ? 'grid gap-4 md:grid-cols-2' : 'space-y-4';
-            const cards = earthquakesList.map(eq => {
+            const cards = list.map(eq => {
                 const props = eq.properties;
                 const coords = eq.geometry.coordinates;
                 const mag = props.mag || 0;
-                const distanceHtml = isNearMeMode && eq.distance !== undefined
-                    ? `<div><p class="text-xs text-slate-400">Distance</p><p class="text-sm text-white">${eq.distance.toFixed(0)} km away</p></div>`
-                    : `<div><p class="text-xs text-slate-400">Status</p><p class="text-sm text-white">${props.status || 'reviewed'}</p></div>`;
-
+                const distanceBlock = isNearMeMode && eq.distance !== undefined
+                    ? `<div><p class="text-xs text-slate-400">Proximity</p><p class="text-white">${eq.distance.toFixed(0)} km</p></div>`
+                    : `<div><p class="text-xs text-slate-400">Status</p><p class="text-white">${props.status || 'reviewed'}</p></div>`;
+                const intensityClass = mag < 4.5 ? 'from-emerald-500/30 to-emerald-400/10' : mag < 6 ? 'from-amber-500/30 to-orange-500/10' : 'from-rose-500/30 to-red-500/10';
                 return `
-                    <article class="glass-panel rounded-2xl p-6 h-full flex flex-col gap-4">
-                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                                <p class="text-xs uppercase tracking-widest text-slate-400">${formatTime(props.time)}</p>
-                                <h3 class="text-2xl font-semibold text-white">${props.place || 'Unknown location'}</h3>
-                                <div class="text-sm text-slate-400 mt-1">${props.type || 'earthquake'}</div>
-                            </div>
-                            <div class="text-right">
-                                <div class="inline-flex flex-col items-end rounded-2xl px-4 py-2 bg-gradient-to-br ${getMagnitudeClass(mag)}">
-                                    <span class="text-3xl font-bold text-white">${mag.toFixed(1)}</span>
-                                    <span class="text-xs text-white/90">${getIntensityLabel(mag)}</span>
+                    <article class="event-card" aria-label="Earthquake event">
+                        <div class="flex gap-4 items-start">
+                            <div class="timeline-dot mt-2"></div>
+                            <div class="flex-1 space-y-2">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <p class="text-xs uppercase tracking-[0.3em] text-slate-400">${formatTime(props.time)}</p>
+                                    <span class="text-xs rounded-full px-3 py-1 border border-white/10">${props.type || 'earthquake'}</span>
+                                </div>
+                                <h3 class="text-2xl font-semibold">${props.place || 'Unknown location'}</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                    <div><p class="text-xs text-slate-400">Depth</p><p class="text-white">${coords[2]?.toFixed(1) || 0} km</p></div>
+                                    <div><p class="text-xs text-slate-400">Coordinates</p><p class="text-white">${coords[1].toFixed(2)}°, ${coords[0].toFixed(2)}°</p></div>
+                                    <div><p class="text-xs text-slate-400">Magnitude Type</p><p class="text-white">${props.magType || 'N/A'}</p></div>
+                                    ${distanceBlock}
                                 </div>
                             </div>
+                            <div class="rounded-2xl px-4 py-2 bg-gradient-to-br ${intensityClass} text-right">
+                                <p class="text-3xl font-bold">${mag.toFixed(1)}</p>
+                                <p class="text-xs uppercase tracking-[0.3em]">${getIntensityLabel(mag)}</p>
+                            </div>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                            <div>
-                                <p class="text-xs uppercase tracking-widest text-slate-400">Depth</p>
-                                <p class="text-white">${coords[2]?.toFixed(1) || 0} km</p>
-                            </div>
-                            <div>
-                                <p class="text-xs uppercase tracking-widest text-slate-400">Coordinates</p>
-                                <p class="text-white">${coords[1].toFixed(2)}°, ${coords[0].toFixed(2)}°</p>
-                            </div>
-                            <div>
-                                <p class="text-xs uppercase tracking-widest text-slate-400">Magnitude Type</p>
-                                <p class="text-white">${props.magType || 'N/A'}</p>
-                            </div>
-                            ${distanceHtml}
-                        </div>
-                        <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+                        <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400 mt-4">
                             <span>ID: ${props.code || props.ids || 'N/A'}</span>
-                            ${props.url ? `<a href="${props.url}" target="_blank" class="text-indigo-300 hover:text-indigo-200">Open detailed report →</a>` : ''}
+                            ${props.url ? `<a href="${props.url}" target="_blank" class="text-sky-300">Detailed report →</a>` : ''}
                         </div>
                     </article>
                 `;
             }).join('');
 
-            contentEl.innerHTML = `<div class="${layoutClass}">${cards}</div>`;
+            contentEl.innerHTML = viewMode === 'grid' ? `<div class="${layoutClass}">${cards}</div>` : cards;
         }
 
         function updateFilterSummary() {
-            const timeRangeText = document.getElementById('timeRange').selectedOptions[0].text;
-            const minMagText = document.getElementById('minMagnitude').selectedOptions[0].text;
+            const chips = [];
+            const timeText = document.getElementById('timeRange').selectedOptions[0].text;
+            const magText = document.getElementById('minMagnitude').selectedOptions[0].text;
             const regionText = document.getElementById('region').selectedOptions[0].text;
-            const chips = [
-                { label: 'Range', value: timeRangeText },
-                { label: 'Magnitude', value: minMagText },
-                { label: 'Region', value: regionText },
-                isNearMeMode ? { label: 'Mode', value: 'Near me' } : null,
-                searchInput.value ? { label: 'Search', value: searchInput.value } : null,
-                { label: 'Sort', value: sortMode === 'magnitude' ? 'Highest magnitude' : 'Most recent' }
-            ].filter(Boolean);
-
-            filterSummaryEl.innerHTML = chips.map(chip => `
-                <span class="text-xs uppercase tracking-widest text-slate-400 bg-white/5 border border-white/10 rounded-full px-3 py-1">
-                    ${chip.label}: <strong class="ml-1 text-white/90">${chip.value}</strong>
-                </span>
-            `).join('');
-        }
-
-        function updateLastUpdated() {
-            if (!lastUpdated) return;
-            const formatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            lastUpdatedEl.textContent = formatter.format(lastUpdated);
+            chips.push(`Range: ${escapeHtml(timeText)}`);
+            chips.push(`Magnitude: ${escapeHtml(magText)}`);
+            chips.push(`Region: ${escapeHtml(regionText)}`);
+            if (searchInput.value) chips.push(`Search: ${escapeHtml(searchInput.value)}`);
+            chips.push(`Sort: ${sortMode === 'magnitude' ? 'Magnitude' : 'Recency'}`);
+            filterSummaryEl.innerHTML = chips.map(label => `<span class="chip">${label}</span>`).join('');
         }
 
         function formatTime(timestamp) {
             if (!timestamp) return 'Unknown';
-            const date = new Date(timestamp);
-            return date.toLocaleString();
+            return new Date(timestamp).toLocaleString();
         }
 
-        function formatRelativeTime(timestamp) {
+        function formatRelative(timestamp) {
             if (!timestamp) return 'Unknown';
-            const diffMs = Date.now() - timestamp;
-            const diffMins = Math.floor(diffMs / 60000);
-            if (diffMins < 1) return 'Just now';
-            if (diffMins < 60) return `${diffMins} min ago`;
-            const diffHours = Math.floor(diffMins / 60);
-            if (diffHours < 24) return `${diffHours} h ago`;
-            const diffDays = Math.floor(diffHours / 24);
-            return `${diffDays} d ago`;
-        }
-
-        function getMagnitudeClass(mag) {
-            if (mag < 4.5) return 'from-emerald-500 to-emerald-600';
-            if (mag < 6.0) return 'from-amber-500 to-orange-500';
-            return 'from-rose-500 to-red-600';
+            const diff = Date.now() - timestamp;
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return 'Just now';
+            if (mins < 60) return `${mins}m ago`;
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return `${hours}h ago`;
+            return `${Math.floor(hours/24)}d ago`;
         }
 
         function getIntensityLabel(mag) {
@@ -503,38 +511,18 @@
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return R * c;
         }
 
         function showLocationStatus(message, type = 'info') {
-            locationStatus.classList.remove('hidden');
             locationStatus.textContent = message;
-            locationStatus.classList.remove('border-emerald-400/40', 'border-red-400/40', 'border-white/10');
-            locationStatus.classList.remove('text-emerald-200', 'text-red-200', 'text-slate-200');
-
-            if (type === 'success') {
-                locationStatus.classList.add('border-emerald-400/40', 'text-emerald-200');
-            } else if (type === 'error') {
-                locationStatus.classList.add('border-red-400/40', 'text-red-200');
-            } else {
-                locationStatus.classList.add('border-white/10', 'text-slate-200');
-            }
-
+            locationStatus.classList.remove('hidden');
+            locationStatus.style.borderColor = type === 'success' ? 'rgba(74, 222, 128, 0.4)' : type === 'error' ? 'rgba(248, 113, 113, 0.4)' : 'var(--stroke)';
             if (type !== 'error') {
-                setTimeout(() => {
-                    locationStatus.classList.add('hidden');
-                }, 5000);
+                setTimeout(() => locationStatus.classList.add('hidden'), 5000);
             }
-        }
-
-        function resetNearMeMode() {
-            isNearMeMode = false;
-            nearMeBtn.classList.remove('bg-gradient-to-r', 'from-emerald-500', 'to-lime-400');
-            nearMeBtn.classList.add('border', 'border-white/10');
-            locationStatus.classList.add('hidden');
-            applyFilters();
         }
 
         refreshBtn.addEventListener('click', () => fetchEarthquakes());
@@ -562,37 +550,38 @@
             viewGridBtn.classList.remove('active');
             applyFilters();
         });
-
         searchInput.addEventListener('input', () => applyFilters());
         document.getElementById('region').addEventListener('change', () => {
-            resetNearMeMode();
+            isNearMeMode = false;
+            nearMeBtn.classList.remove('active');
+            applyFilters();
         });
         document.getElementById('timeRange').addEventListener('change', () => fetchEarthquakes());
         document.getElementById('minMagnitude').addEventListener('change', () => fetchEarthquakes());
 
         nearMeBtn.addEventListener('click', () => {
-            if (!navigator.geolocation) {
-                showLocationStatus('Geolocation not supported by your browser.', 'error');
+            if (isNearMeMode) {
+                isNearMeMode = false;
+                nearMeBtn.classList.remove('active');
+                showLocationStatus('Near-me mode disabled. Resuming global sort.', 'info');
+                applyFilters();
                 return;
             }
-
-            showLocationStatus('Requesting your location...', 'info');
-            nearMeBtn.classList.remove('border', 'border-white/10');
-            nearMeBtn.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-lime-400');
-
+            if (!navigator.geolocation) {
+                showLocationStatus('Geolocation unsupported in this browser.', 'error');
+                return;
+            }
+            showLocationStatus('Acquiring location lock...', 'info');
             navigator.geolocation.getCurrentPosition(
-                position => {
-                    userLocation = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    };
+                (position) => {
+                    userLocation = { latitude: position.coords.latitude, longitude: position.coords.longitude };
                     isNearMeMode = true;
-                    showLocationStatus(`Location locked at ${userLocation.latitude.toFixed(2)}°, ${userLocation.longitude.toFixed(2)}°. Showing closest quakes.`, 'success');
+                    nearMeBtn.classList.add('active');
+                    showLocationStatus(`Locked at ${userLocation.latitude.toFixed(2)}°, ${userLocation.longitude.toFixed(2)}°`, 'success');
                     applyFilters();
                 },
-                error => {
-                    showLocationStatus('Unable to access location: ' + error.message, 'error');
-                    resetNearMeMode();
+                (error) => {
+                    showLocationStatus('Unable to retrieve location: ' + error.message, 'error');
                 }
             );
         });
