@@ -1,95 +1,82 @@
-# Global Earhquake Tracker - Laravel Edition
+# Global Earhquake Tracker
 
-This project is a modernization of a static HTML/JS earthquake tracker, migrated to a robust **Laravel 12** application. It leverages **Laravel Breeze** for scaffolding, **Tailwind CSS** for a premium UI, and features a dynamic **Admin Dashboard** to manage data sources.
+Global Earhquake Tracker is a Laravel 12 application that elevates the old single-page quake visualizer into a modern seismic intelligence console. It blends a Leaflet-powered world map, cinematic UI, live telemetry, contextual insights, and admin tooling so operators can monitor and curate global earthquake feeds.
 
-## 🚀 Transformation Overview
+## ✨ Highlights
 
-The original project was a single `index.html` file. It has been transformed into a full-stack Laravel application with:
+- **Immersive Console Experience** – Floating glass panels, theme switching, animated Leaflet markers, and dual views (grid atlas vs. stream) keep the UX polished and informative.
+- **Real-time Filtering & Insights** – Filter by time range, magnitude, region, or keyword. Stats widgets and “Signal Spotlights” summarize totals, peaks, depths, and notable events.
+- **Leaflet Map + News Modal** – Click any event to focus the map, view detailed metadata, and (with a NewsAPI key) fetch related headlines right inside the modal.
+- **Admin Ops Suite** – Manage earthquake sources, define reusable source types (USGS, EMSC, …), and configure NewsAPI keys from the Breeze dashboard.
+- **Near-Me Mode** – Leverage browser geolocation to prioritize the nearest quakes for situational awareness.
 
-*   **Framework**: Migrated to **Laravel 12**.
-*   **Dynamic Backend**: Data fetching is now proxied through Laravel, allowing for multiple API sources.
-*   **Admin Control**: A dashboard to toggle between different earthquake data providers (e.g., USGS, EMSC).
-*   **Styling**: Replaced custom CSS with **Tailwind CSS** utility classes.
-*   **Scaffolding**: Integrated **Laravel Breeze** (Blade stack).
+## 🛠 Stack Overview
 
-## 🛠️ Tech Stack
+| Layer    | Details                                  |
+|----------|-------------------------------------------|
+| Backend  | Laravel 12, PHP 8.2+, Eloquent, HTTP client |
+| Frontend | Blade templates, vanilla JS, Tailwind CSS  |
+| Mapping  | Leaflet 1.9 + CARTO basemaps               |
+| Auth/UI  | Laravel Breeze (Blade stack)               |
+| DB       | SQLite by default (MySQL/Postgres ready)   |
 
-*   **Backend**: Laravel 12 (PHP)
-*   **Frontend**: Blade Templates, JavaScript (Vanilla)
-*   **Styling**: Tailwind CSS
-*   **Database**: SQLite / MySQL (for managing data sources)
-*   **Data Sources**:
-    *   [USGS Earthquake Hazards Program](https://earthquake.usgs.gov/)
-    *   [EMSC (European-Mediterranean Seismological Centre)](https://www.seismicportal.eu/)
+## 🚀 Getting Started
 
-## ✨ Features
+```bash
+git clone <repository-url>
+cd Earthquake
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+```
 
-*   **🔌 Multi-Source Support**: Switch between USGS and EMSC APIs dynamically from the admin panel.
-*   **🛡️ Admin Dashboard**: Manage active data sources securely.
-*   **🌍 Real-time Data**: Fetches live earthquake data based on the active source.
-*   **🔍 Interactive Filtering**:
-    *   **Time Range**: Past Hour, Day, Week, Month.
-    *   **Magnitude**: Filter by minimum magnitude (1.0+ to 6.0+).
-    *   **Region**: Filter by specific global regions.
-*   **📍 Geolocation**: "Near Me" feature calculates distance to earthquakes from your current location.
-*   **📊 Visual Statistics**: Dashboard showing total count, highest magnitude, and averages.
-*   **📱 Responsive Design**: Fully optimized for all devices.
+- Configure database connection in `.env` (SQLite works out of the box).
+- Migrate + seed (creates default admin user, sources, and types):
+  ```bash
+  php artisan migrate --seed
+  ```
+- Run the dev stack:
+  ```bash
+  npm run dev   # or npm run build for production
+  php artisan serve
+  ```
+  Visit `http://127.0.0.1:8000`.
 
-## 📦 Installation & Setup
+## 🔧 Admin Tasks
 
-1.  **Clone the repository**
-    ```bash
-    git clone <repository-url>
-    cd earth-quak
-    ```
+1. Log in (default user: `admin@nafiur.com` / `password`).
+2. Use `/dashboard` to add/edit data sources and source types.
+3. Configure NewsAPI integration at `/admin/settings`.
+4. Test the home console to ensure live feed + news are working.
 
-2.  **Install Dependencies**
-    ```bash
-    composer install
-    npm install
-    ```
+## 🧭 Feature Breakdown
 
-3.  **Environment Setup**
-    ```bash
-    cp .env.example .env
-    php artisan key:generate
-    ```
-    *Ensure your database connection in `.env` is configured (default is SQLite).*
+### Home Console (`/`)
+- Leaflet map with theme-aware tiles and magnitude-scaled markers.
+- Floating control panel with filtering, search, auto refresh, and Near Me.
+- Live stats + insights cards, infinite-scroll event list, and a news-enabled detail modal.
 
-4.  **Database Setup**
-    Run migrations and seed the default data sources (USGS & EMSC):
-    ```bash
-    php artisan migrate --seed
-    ```
+### Admin Portal
+- **Sources**: CRUD for providers, activate one at a time, toggle near-real-time feed.
+- **Source Types**: Manage reusable adapters (USGS, EMSC, etc.).
+- **Settings**: Store NewsAPI key (served to the frontend via `/api/settings/news-api-key`).
 
-5.  **Build Assets**
-    ```bash
-    npm run build
-    ```
+## 📁 Key Files
 
-6.  **Run the Application**
-    ```bash
-    php artisan serve
-    ```
-    Visit `http://localhost:8000` in your browser.
+| File/Dir                                           | Purpose                                   |
+|----------------------------------------------------|-------------------------------------------|
+| `app/Http/Controllers/EarthquakeController.php`    | Renders console + proxies quake data       |
+| `resources/views/earthquake/index.blade.php`       | Main console UI + JS                      |
+| `app/Http/Controllers/Admin/SourceController.php`  | Source management                         |
+| `app/Http/Controllers/Admin/SourceTypeController.php` | Source type CRUD                       |
+| `app/Http/Controllers/Admin/SettingController.php` | Stores NewsAPI key, exposes API endpoint  |
+| `database/seeders/*Seeder.php`                     | Seeds default user, source types, sources |
 
-## 🎮 Usage
+## ⚠️ Notes
 
-### Switching Data Sources
-1.  **Log in** to the application (register a new account if needed).
-2.  Navigate to the **Dashboard** (`/dashboard`).
-3.  You will see a list of available data sources (USGS, EMSC).
-4.  Click **Activate** on the source you wish to use.
-5.  Return to the **Home** page to see data from the selected provider.
+- The NewsAPI key endpoint is public for convenience—lock it down if deploying publicly.
+- Leaflet requires `map.invalidateSize()` after layout changes; the template already handles this on init.
+- Customize map tiles/themes or extend source types to add new providers quickly.
 
-## 📂 Project Structure
-
-*   `app/Http/Controllers/EarthquakeController.php`: Handles the main view and data proxying logic.
-*   `app/Http/Controllers/Admin/SourceController.php`: Manages source toggling in the dashboard.
-*   `app/Models/EarthquakeSource.php`: Model for the data sources table.
-*   `resources/views/earthquake/index.blade.php`: The main frontend view.
-*   `database/seeders/EarthquakeSourceSeeder.php`: Seeds the initial API sources.
-
----
-*Built with ❤️ by Nafiur Rahman*
-# global-earthquake-tracker
+Stay informed and stay safe. 🌍
