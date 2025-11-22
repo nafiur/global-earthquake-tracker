@@ -18,37 +18,41 @@
     
     <style>
         :root {
+            color-scheme: light;
+            --surface: rgba(255, 255, 255, 0.92);
+            --surface-light: rgba(252, 253, 255, 0.85);
+            --stroke: rgba(15, 23, 42, 0.08);
+            --primary: #0284c7;
+            --accent: #7c3aed;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --success: #16a34a;
+            --bg-primary: #edf6ff;
+            --bg-map: #e2f3ff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --marker-light: #10b981;
+            --marker-moderate: #f97316;
+            --marker-strong: #dc2626;
+        }
+        
+        [data-theme="dark"] {
             color-scheme: dark;
             --surface: rgba(15, 23, 42, 0.85);
             --surface-light: rgba(30, 41, 59, 0.75);
-            --stroke: rgba(148, 163, 184, 0.15);
+            --stroke: rgba(148, 163, 184, 0.18);
             --primary: #0ea5e9;
             --accent: #8b5cf6;
             --danger: #ef4444;
             --warning: #f59e0b;
             --success: #10b981;
-            --bg-primary: #0f172a;
+            --bg-primary: #030712;
             --bg-map: #0f172a;
-            --text-primary: #f1f5f9;
+            --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --marker-light: #10b981;
-            --marker-moderate: #f59e0b;
-            --marker-strong: #ef4444;
-        }
-        
-        /* Light Theme Variables */
-        [data-theme="light"] {
-            color-scheme: light;
-            --surface: rgba(255, 255, 255, 0.9);
-            --surface-light: rgba(241, 245, 249, 0.85);
-            --stroke: rgba(71, 85, 105, 0.2);
-            --bg-primary: #f1f5f9;
-            --bg-map: #e2e8f0;
-            --text-primary: #1e293b;
-            --text-secondary: #475569;
-            --marker-light: #059669;
-            --marker-moderate: #d97706;
-            --marker-strong: #dc2626;
+            --marker-light: #34d399;
+            --marker-moderate: #fb923c;
+            --marker-strong: #f87171;
         }
         
         * {
@@ -59,10 +63,14 @@
         
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg-primary);
+            background: radial-gradient(circle at top, rgba(191, 219, 254, 0.7), transparent 55%), 
+                        linear-gradient(180deg, var(--bg-primary) 0%, #fdf2ff 100%);
             color: var(--text-primary);
             overflow-x: hidden;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            transition: background 0.4s ease, color 0.3s ease;
+        }
+        [data-theme="dark"] body {
+            background: var(--bg-primary);
         }
         
         /* Map Container */
@@ -950,6 +958,14 @@
             applyTheme(savedTheme);
         }
         
+        function setThemeMode(mode) {
+            if (mode === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        }
+        
         function applyTheme(theme) {
             currentTheme = theme;
             localStorage.setItem('earthquakeTrackerTheme', theme);
@@ -965,9 +981,11 @@
             // Apply theme
             if (theme === 'system') {
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+                setThemeMode(prefersDark ? 'dark' : 'light');
+            } else if (theme === 'dark') {
+                setThemeMode('dark');
             } else {
-                document.documentElement.setAttribute('data-theme', theme);
+                setThemeMode('light');
             }
             
             // Update map tiles if map exists
