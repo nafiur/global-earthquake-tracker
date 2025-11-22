@@ -1279,7 +1279,7 @@
         document.getElementById('loadMoreBtn').addEventListener('click', () => {
             currentDisplayCount += ITEMS_PER_PAGE;
             renderList();
-        }
+        });
         
         // Show Earthquake Details Modal
         function showEarthquakeDetails(index) {
@@ -1417,7 +1417,7 @@
                     </div>
                 `;
             }
-        });
+        }
         
         document.getElementById('nearMeBtn').addEventListener('click', () => {
             if (isNearMeMode) {
