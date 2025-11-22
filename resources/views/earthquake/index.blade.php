@@ -3,187 +3,831 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Global Earhquake Console</title>
+    <title>Global Earthquake Tracker</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             color-scheme: dark;
-            --surface: rgba(3, 7, 18, 0.75);
+            --surface: rgba(15, 23, 42, 0.85);
+            --surface-light: rgba(30, 41, 59, 0.75);
             --stroke: rgba(148, 163, 184, 0.15);
-            --primary: #7dd3fc;
-            --accent: #a855f7;
+            --primary: #0ea5e9;
+            --accent: #8b5cf6;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --bg-primary: #0f172a;
+            --bg-map: #0f172a;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --marker-light: #10b981;
+            --marker-moderate: #f59e0b;
+            --marker-strong: #ef4444;
         }
-        body {
-            min-height: 100vh;
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #010409;
-            color: #e2e8f0;
+        
+        /* Light Theme Variables */
+        [data-theme="light"] {
+            color-scheme: light;
+            --surface: rgba(255, 255, 255, 0.9);
+            --surface-light: rgba(241, 245, 249, 0.85);
+            --stroke: rgba(71, 85, 105, 0.2);
+            --bg-primary: #f1f5f9;
+            --bg-map: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --marker-light: #059669;
+            --marker-moderate: #d97706;
+            --marker-strong: #dc2626;
+        }
+        
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .starfield::before,
-        .starfield::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: radial-gradient(rgba(125,211,252,0.4) 1px, transparent 1px);
-            background-size: 40px 40px;
-            opacity: 0.15;
-            animation: drift 50s linear infinite;
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
-        .starfield::after {
-            opacity: 0.25;
-            background-size: 80px 80px;
-            animation-duration: 80s;
+        
+        /* Map Container */
+        #map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
         }
-        @keyframes drift {
-            from { transform: translate3d(-10px, -10px, 0); }
-            to { transform: translate3d(10px, 10px, 0); }
-        }
-        .glass-pane {
+        
+        /* Floating Header */
+        .app-header {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
             background: var(--surface);
             backdrop-filter: blur(20px);
             border: 1px solid var(--stroke);
-            border-radius: 28px;
-            box-shadow: 0 40px 120px rgba(2, 6, 23, 0.65);
-        }
-        .control-dock select,
-        .control-dock input {
-            width: 100%;
-            border-radius: 18px;
-            border: 1px solid var(--stroke);
-            background: rgba(15, 23, 42, 0.75);
-            color: #f8fafc;
-            padding: 0.8rem 1rem;
-            font-size: 0.95rem;
-            transition: border 0.25s ease, transform 0.25s ease;
-        }
-        .control-dock select:focus,
-        .control-dock input:focus {
-            outline: none;
-            border-color: rgba(125, 211, 252, 0.7);
-            transform: translateY(-2px);
-        }
-        .chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.35rem 0.9rem;
-            border-radius: 999px;
-            border: 1px solid rgba(125, 211, 252, 0.2);
-            background: rgba(15, 23, 42, 0.6);
-            font-size: 0.75rem;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            color: rgba(226, 232, 240, 0.85);
-        }
-        .toggle-pill {
-            border-radius: 999px;
-            border: 1px solid var(--stroke);
-            padding: 0.35rem 1.2rem;
-            font-size: 0.87rem;
-            color: rgba(226,232,240,0.85);
-            background: transparent;
-            transition: all 0.25s ease;
-            cursor: pointer;
-        }
-        .toggle-pill.active {
-            background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(168, 85, 247, 0.3));
-            border-color: rgba(125, 211, 252, 0.4);
-            color: #fff;
-            box-shadow: 0 15px 40px rgba(79, 70, 229, 0.35);
-        }
-        .data-capsule {
             border-radius: 24px;
+            padding: 1rem 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            min-width: 320px;
+            max-width: 90%;
+        }
+        
+        .app-header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .status-chip {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            background: rgba(14, 165, 233, 0.15);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            color: var(--primary);
+            margin-top: 0.5rem;
+        }
+        
+        /* Floating Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 6.5rem;
+            right: 1rem;
+            width: 400px;
+            max-width: calc(100vw - 2rem);
+            max-height: calc(100vh - 8rem);
+            background: var(--surface);
+            backdrop-filter: blur(20px);
             border: 1px solid var(--stroke);
-            background: rgba(2, 6, 23, 0.9);
+            border-radius: 24px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
             padding: 1.5rem;
+            border-bottom: 1px solid var(--stroke);
+            flex-shrink: 0;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar-content {
+            padding: 1rem;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        
+        /* Custom Scrollbar */
+        .sidebar-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .sidebar-content::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 10px;
+        }
+        
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 10px;
+        }
+        
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+        
+        /* Controls */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .control-group {
             display: flex;
             flex-direction: column;
             gap: 0.4rem;
         }
-        .timeline {
-            position: relative;
-            padding-left: 2.5rem;
-        }
-        .timeline::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 1rem;
-            width: 2px;
-            background: linear-gradient(to bottom, rgba(125, 211, 252, 0.4), rgba(168, 85, 247, 0.15));
-        }
-        .timeline-dot {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #0ea5e9;
-            border: 3px solid rgba(14, 165, 233, 0.3);
-            box-shadow: 0 0 20px rgba(14, 165, 233, 0.6);
-        }
-        .event-card {
-            border-radius: 24px;
-            padding: 1.5rem;
-            border: 1px solid rgba(148, 163, 184, 0.15);
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.65));
-            transition: transform 0.25s ease, border 0.25s ease;
-        }
-        .event-card:hover {
-            transform: translate3d(4px, -3px, 0);
-            border-color: rgba(125, 211, 252, 0.4);
-        }
-        .status-bar {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 1rem;
-            font-size: 0.8rem;
+        
+        .control-group label {
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
-        .status-bar span {
-            border-radius: 999px;
-            border: 1px solid rgba(125,211,252,0.25);
-            padding: 0.4rem 0.9rem;
-            color: rgba(226,232,240,0.85);
+        
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            background: var(--surface-light);
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+        
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--surface);
+        }
+        
+        .btn {
+            padding: 0.75rem 1.25rem;
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            background: var(--surface-light);
+            color: #f1f5f9;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-family: inherit;
+        }
+        
+        .btn:hover {
+            background: rgba(14, 165, 233, 0.15);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+        
+        .btn.active {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(139, 92, 246, 0.25));
+            border-color: var(--primary);
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-card {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .stat-card .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+            font-weight: 500;
+        }
+        
+        .stat-card .value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        /* Earthquake List */
+        .eq-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .eq-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            padding: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .eq-card:hover {
+            background: rgba(30, 41, 59, 0.75);
+            border-color: rgba(14, 165, 233, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .eq-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        
+        .eq-magnitude {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        .mag-light { color: var(--marker-light); }
+        .mag-moderate { color: var(--marker-moderate); }
+        .mag-strong { color: var(--marker-strong); }
+        
+        .eq-time {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .eq-location {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .eq-details {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .eq-details span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+        
+        .spinner {
+            border: 3px solid rgba(148, 163, 184, 0.2);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .app-header {
+                top: 0.5rem;
+                padding: 0.75rem 1rem;
+                border-radius: 16px;
+            }
+            
+            .app-header h1 {
+                font-size: 1rem;
+            }
+            
+            .sidebar {
+                top: auto;
+                bottom: 0;
+                right: 0;
+                left: 0;
+                width: 100%;
+                max-width: 100%;
+                max-height: 50vh;
+                border-radius: 24px 24px 0 0;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Leaflet Popup Customization */
+        .leaflet-popup-content-wrapper {
+            background: var(--surface);
+            color: var(--text-primary);
+            border-radius: 16px;
+            border: 1px solid var(--stroke);
+        }
+        
+        .leaflet-popup-content {
+            margin: 1rem;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .popup-tip {
+            background: var(--surface);
+        }
+        
+        .popup-magnitude {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .popup-location {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .popup-details {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Load More Button */
+        .load-more-container {
+            padding: 1rem 0;
+            text-align: center;
+        }
+        
+        .load-more-btn {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(139, 92, 246, 0.15));
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            border-radius: 12px;
+            color: #f1f5f9;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: inherit;
+        }
+        
+        .load-more-btn:hover {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(139, 92, 246, 0.25));
+            border-color: rgba(14, 165, 233, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(14, 165, 233, 0.3);
+        }
+        
+        .load-more-btn:active {
+            transform: translateY(0);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Settings Button */
+        .settings-btn {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1001;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--stroke);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+        
+        .settings-btn:hover {
+            transform: rotate(90deg);
+            border-color: var(--primary);
+            box-shadow: 0 12px 32px rgba(14, 165, 233, 0.4);
+        }
+        
+        /* Settings Menu */
+        .settings-menu {
+            position: fixed;
+            top: 5rem;
+            right: 1rem;
+            z-index: 1002;
+            min-width: 220px;
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+            transition: all 0.25s ease;
+        }
+        
+        .settings-menu.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+        
+        .settings-menu h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+        
+        .theme-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 0.5rem;
+            background: transparent;
+            border: 1px solid transparent;
+        }
+        
+        .theme-option:hover {
+            background: var(--surface-light);
+            border-color: var(--stroke);
+        }
+        
+        .theme-option.active {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(139, 92, 246, 0.15));
+            border-color: var(--primary);
+        }
+        
+        .theme-option .icon {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .theme-option .label {
+            flex: 1;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .theme-option .checkmark {
+            font-size: 1rem;
+            color: var(--primary);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .theme-option.active .checkmark {
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .settings-btn {
+                top: 0.5rem;
+                right: 0.5rem;
+                width: 44px;
+                height: 44px;
+            }
+            
+            .settings-menu {
+                right: 0.5rem;
+                top: 4.5rem;
+            }
+        }
+        
+        /* Earthquake Detail Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            padding: 1rem;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background: var(--surface);
+            border: 1px solid var(--stroke);
+            border-radius: 24px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--stroke);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .modal-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: var(--surface-light);
+            color: var(--text-primary);
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .eq-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .eq-detail-item {
+            background: var(--surface-light);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--stroke);
+        }
+        
+        .eq-detail-item .detail-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .eq-detail-item .detail-value {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .news-section {
+            margin-top: 1.5rem;
+        }
+        
+        .news-section h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .news-loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+        
+        .news-article {
+            background: var(--surface-light);
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .news-article:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .news-article h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        
+        .news-article p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+        
+        .news-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .news-source {
+            font-weight: 500;
+        }
+        
+        .news-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .news-link:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .modal-content {
+                max-height: 80vh;
+            }
+            
+            .eq-detail-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
-<body class="starfield relative">
+<body>
     @php
         $sourceLabel = $activeSourceName ?? 'Global Live Feed';
-        $sourceTypeLabel = $activeSourceType ?? 'USGS / EMSC Network';
+        $sourceTypeLabel = $activeSourceType ?? 'USGS / EMSC';
     @endphp
-
-    <main class="relative z-10 max-w-6xl mx-auto px-6 py-12 space-y-8">
-        <header class="glass-pane p-8 grid gap-6 lg:grid-cols-[1.25fr,0.75fr]">
-            <div class="space-y-4">
-                <span class="chip">Global Earhquake Console</span>
-                <h1 class="text-4xl md:text-5xl font-semibold leading-tight">Realtime Earthquake Intelligence Board</h1>
-                <p class="text-slate-300 max-w-2xl">Cut through noise with a cinematic seismic feed. Compare magnitudes, explore regional stress, and anchor decisions with live telemetry.</p>
-                <div class="status-bar">
-                    <span>Active Source · {{ $sourceLabel }}</span>
-                    <span>Network · {{ $sourceTypeLabel }}</span>
-                    <span>Auto Sync · 5m cadence</span>
-                </div>
+    
+    <!-- Settings Button -->
+    <button id="settingsBtn" class="settings-btn" aria-label="Settings">
+        ⚙️
+    </button>
+    
+    <!-- Settings Menu -->
+    <div id="settingsMenu" class="settings-menu">
+        <h3>Theme</h3>
+        <div class="theme-option" data-theme="system">
+            <span class="icon">💻</span>
+            <span class="label">System Default</span>
+            <span class="checkmark">✓</span>
+        </div>
+        <div class="theme-option" data-theme="light">
+            <span class="icon">☀️</span>
+            <span class="label">Light</span>
+            <span class="checkmark">✓</span>
+        </div>
+        <div class="theme-option" data-theme="dark">
+            <span class="icon">🌙</span>
+            <span class="label">Dark</span>
+            <span class="checkmark">✓</span>
+        </div>
+    </div>
+    
+    <!-- Map Container -->
+    <div id="map"></div>
+    
+    <!-- Floating Header -->
+    <header class="app-header">
+        <h1>Global Earthquake Tracker</h1>
+        <div style="text-align: center;">
+            <span class="status-chip">● Live: {{ $sourceLabel }}</span>
+        </div>
+    </header>
+    
+    <!-- Floating Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Recent Earthquakes</h2>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                <button id="refreshBtn" class="btn active" style="flex: 1;">
+                    ↻ Refresh
+                </button>
+                <button id="nearMeBtn" class="btn" style="flex: 1;">
+                    📍 Near Me
+                </button>
             </div>
-            <div class="relative">
-                <div class="absolute inset-0 blur-3xl bg-gradient-to-br from-sky-500/30 to-purple-500/30"></div>
-                <div class="relative glass-pane p-6 rounded-3xl h-full flex flex-col gap-4">
-                    <p class="text-sm uppercase tracking-[0.3em] text-slate-400">Mission Controls</p>
-                    <div class="flex flex-col gap-3">
-                        <button id="refreshBtn" class="toggle-pill active text-center">Pulse Refresh</button>
-                        <button id="nearMeBtn" class="toggle-pill text-center">Lock Near Me</button>
-                        <p class="text-xs text-slate-400">Tip: Stay in grid view for macro or switch to stream for operator review.</p>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <section class="glass-pane p-6 space-y-6">
-            <div class="control-dock grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div>
-                    <label class="text-xs uppercase tracking-wider text-slate-400">Time Range</label>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Controls -->
+            <div class="controls">
+                <div class="control-group">
+                    <label>Time Range</label>
                     <select id="timeRange">
                         <option value="hour">Past Hour</option>
                         <option value="day" selected>Past Day</option>
@@ -191,8 +835,9 @@
                         <option value="month">Past Month</option>
                     </select>
                 </div>
-                <div>
-                    <label class="text-xs uppercase tracking-wider text-slate-400">Minimum Magnitude</label>
+                
+                <div class="control-group">
+                    <label>Min Magnitude</label>
                     <select id="minMagnitude">
                         <option value="all">All</option>
                         <option value="1">1.0+</option>
@@ -201,8 +846,9 @@
                         <option value="6">6.0+</option>
                     </select>
                 </div>
-                <div>
-                    <label class="text-xs uppercase tracking-wider text-slate-400">Region Lens</label>
+                
+                <div class="control-group">
+                    <label>Region</label>
                     <select id="region">
                         <option value="global">Global</option>
                         <option value="asia">Asia</option>
@@ -211,92 +857,153 @@
                         <option value="southamerica">South America</option>
                         <option value="africa">Africa</option>
                         <option value="oceania">Oceania</option>
-                        <option value="middleeast">Middle East</option>
-                        <option value="caribbean">Caribbean</option>
                     </select>
                 </div>
-                <div>
-                    <label class="text-xs uppercase tracking-wider text-slate-400">Search Keyword</label>
-                    <input id="searchTerm" type="text" placeholder="e.g. Alaska, Mexico" />
+                
+                <div class="control-group">
+                    <label>Search</label>
+                    <input id="searchTerm" type="text" placeholder="Location..." />
                 </div>
             </div>
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex flex-wrap gap-3">
-                    <span class="chip">Sort feed</span>
-                    <button id="sortMagnitude" class="toggle-pill active">Magnitude</button>
-                    <button id="sortRecency" class="toggle-pill">Recency</button>
+            
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Events</div>
+                    <div class="value" id="statTotal">0</div>
                 </div>
-                <div class="flex flex-wrap gap-3">
-                    <span class="chip">View</span>
-                    <button id="viewGrid" class="toggle-pill active">Grid Overview</button>
-                    <button id="viewList" class="toggle-pill">Stream</button>
+                <div class="stat-card">
+                    <div class="label">Peak Mag</div>
+                    <div class="value" id="statPeak">0.0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Avg Mag</div>
+                    <div class="value" id="statAvg">0.0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Avg Depth</div>
+                    <div class="value" id="statDepth">0 km</div>
                 </div>
             </div>
-            <div id="filterSummary" class="flex flex-wrap gap-3"></div>
-        </section>
-
-        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4" id="stats"></section>
-
-        <section>
-            <div class="glass-pane p-6 rounded-3xl">
-                <div class="flex flex-col gap-2 mb-4">
-                    <h2 class="text-xl font-semibold">Signal Spotlights</h2>
-                    <p class="text-slate-400 text-sm">Fast context snapshots. Use them for quick triage before drilling into specifics.</p>
+            
+            <!-- Earthquake List -->
+            <div id="eqList" class="eq-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading earthquake data...</p>
                 </div>
-                <div class="grid gap-4 md:grid-cols-3" id="insights"></div>
             </div>
-        </section>
-
-        <div id="locationStatus" class="hidden glass-pane p-4 text-sm text-slate-200"></div>
-
-        <section class="space-y-4">
-            <div class="flex flex-col gap-2">
-                <div class="flex items-center gap-2">
-                    <h2 class="text-3xl font-semibold">Live Stream</h2>
-                    <span class="chip">Tracking <span id="liveCount">0</span> events</span>
+            
+            <!-- Load More Button -->
+            <div id="loadMoreContainer" class="load-more-container hidden">
+                <button id="loadMoreBtn" class="load-more-btn">
+                    ↓ Load More Earthquakes
+                </button>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Earthquake Detail Modal -->
+    <div id="eqModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Earthquake Details</h2>
+                <button class="modal-close" onclick="closeEarthquakeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="eq-detail-grid" id="modalDetails">
+                    <!-- Details will be inserted here -->
                 </div>
-                <p class="text-slate-400 text-sm">Scroll through the kinetic timeline or switch to grid view for macro comparisons.</p>
+                <div class="news-section">
+                    <h3>📰 Related News</h3>
+                    <div id="newsContainer">
+                        <div class="news-loading">
+                            <div class="spinner"></div>
+                            <p>Loading news...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div id="content" class="timeline space-y-4">
-                <div class="glass-pane p-6 text-center text-slate-300">Loading telemetry...</div>
-            </div>
-        </section>
-    </main>
-
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+    
     <script>
-        const API_BASE = '/earthquakes/data';
+        // Global State
+        let map;
         let earthquakes = [];
+        let filteredEarthquakes = [];
+        let markers = [];
         let userLocation = null;
         let isNearMeMode = false;
-        let sortMode = 'magnitude';
-        let viewMode = 'grid';
-        let lastUpdated = null;
-
-        const refreshBtn = document.getElementById('refreshBtn');
-        const nearMeBtn = document.getElementById('nearMeBtn');
-        const statsEl = document.getElementById('stats');
-        const insightsEl = document.getElementById('insights');
-        const contentEl = document.getElementById('content');
-        const liveCountEl = document.getElementById('liveCount');
-        const searchInput = document.getElementById('searchTerm');
-        const filterSummaryEl = document.getElementById('filterSummary');
-        const sortMagnitudeBtn = document.getElementById('sortMagnitude');
-        const sortRecencyBtn = document.getElementById('sortRecency');
-        const viewGridBtn = document.getElementById('viewGrid');
-        const viewListBtn = document.getElementById('viewList');
-        const locationStatus = document.getElementById('locationStatus');
-
-        const loaderCard = `
-            <div class="glass-pane p-5">
-                <div class="skeleton h-6 w-1/3 rounded"></div>
-                <div class="mt-4 space-y-3">
-                    <div class="skeleton h-4 w-full rounded"></div>
-                    <div class="skeleton h-4 w-3/4 rounded"></div>
-                    <div class="skeleton h-4 w-2/3 rounded"></div>
-                </div>
-            </div>
-        `;
-
+        let currentDisplayCount = 20;
+        const ITEMS_PER_PAGE = 20;
+        let currentTheme = 'dark';
+        
+        // Theme Management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('earthquakeTrackerTheme') || 'dark';
+            applyTheme(savedTheme);
+        }
+        
+        function applyTheme(theme) {
+            currentTheme = theme;
+            localStorage.setItem('earthquakeTrackerTheme', theme);
+            
+            // Update active state in menu
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.theme === theme) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // Apply theme
+            if (theme === 'system') {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+            
+            // Update map tiles if map exists
+            if (map) {
+                updateMapTiles();
+                // Refresh markers to update colors
+                if (filteredEarthquakes.length > 0) {
+                    updateMap(filteredEarthquakes);
+                }
+            }
+        }
+        
+        function updateMapTiles() {
+            const theme = document.documentElement.getAttribute('data-theme');
+            const isDark = theme === 'dark';
+            
+            // Remove existing tile layer
+            map.eachLayer(layer => {
+                if (layer instanceof L.TileLayer) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // Add appropriate tile layer
+            const tileUrl = isDark 
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+            
+            L.tileLayer(tileUrl, {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+        }
+        
+        // Region Bounds
         const regions = {
             global: null,
             asia: { minLat: -10, maxLat: 55, minLon: 60, maxLon: 150 },
@@ -304,191 +1011,249 @@
             northamerica: { minLat: 15, maxLat: 72, minLon: -170, maxLon: -50 },
             southamerica: { minLat: -56, maxLat: 13, minLon: -82, maxLon: -34 },
             africa: { minLat: -35, maxLat: 37, minLon: -18, maxLon: 52 },
-            oceania: { minLat: -50, maxLat: 0, minLon: 110, maxLon: 180 },
-            middleeast: { minLat: 12, maxLat: 42, minLon: 34, maxLon: 63 },
-            caribbean: { minLat: 10, maxLat: 27, minLon: -85, maxLon: -60 }
+            oceania: { minLat: -50, maxLat: 0, minLon: 110, maxLon: 180 }
         };
-
-        function escapeHtml(value) {
-            const div = document.createElement('div');
-            div.textContent = value;
-            return div.innerHTML;
+        
+        // Initialize Map
+        function initMap() {
+            map = L.map('map', {
+                center: [20, 0],
+                zoom: 2,
+                zoomControl: true,
+                minZoom: 2,
+                maxZoom: 18
+            });
+            
+            // Dark theme map tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
         }
-
-        function isInRegion(lat, lon, region) {
-            if (region === 'global' || !regions[region]) return true;
-            const bounds = regions[region];
-            return lat >= bounds.minLat && lat <= bounds.maxLat && lon >= bounds.minLon && lon <= bounds.maxLon;
-        }
-
-        async function fetchEarthquakes(showLoader = true) {
-            if (showLoader) {
-                contentEl.innerHTML = `<div class="grid gap-4 md:grid-cols-2">${loaderCard.repeat(2)}</div>`;
-            }
-
-            refreshBtn.disabled = true;
-            refreshBtn.classList.add('active');
-
+        
+        // Fetch Earthquakes
+        async function fetchEarthquakes() {
+            const timeRange = document.getElementById('timeRange').value;
+            const minMag = document.getElementById('minMagnitude').value;
+            
+            document.getElementById('eqList').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading earthquake data...</p>
+                </div>
+            `;
+            
             try {
-                const timeRange = document.getElementById('timeRange').value;
-                const minMag = document.getElementById('minMagnitude').value;
-                const url = new URL(window.location.origin + API_BASE);
+                const url = new URL(window.location.origin + '/earthquakes/data');
                 url.searchParams.append('timeRange', timeRange);
                 url.searchParams.append('minMagnitude', minMag);
-
+                
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Failed to fetch data');
-
+                
                 const data = await response.json();
                 earthquakes = data.features || [];
                 applyFilters();
             } catch (error) {
                 console.error(error);
-                contentEl.innerHTML = `<div class="glass-pane p-6 text-center text-red-200">Feed temporarily unavailable. Please retry.</div>`;
-            } finally {
-                refreshBtn.disabled = false;
+                document.getElementById('eqList').innerHTML = `
+                    <div class="loading">
+                        <p style="color: #ef4444;">Failed to load data. Please try again.</p>
+                    </div>
+                `;
             }
         }
-
+        
+        // Apply Filters
         function applyFilters() {
             const region = document.getElementById('region').value;
-            const searchTerm = (searchInput.value || '').toLowerCase();
+            const searchTerm = (document.getElementById('searchTerm').value || '').toLowerCase();
+            
             let filtered = earthquakes.filter(eq => {
                 const coords = eq.geometry.coordinates;
                 const matchesRegion = isInRegion(coords[1], coords[0], region);
                 const matchesSearch = !searchTerm || (eq.properties.place || '').toLowerCase().includes(searchTerm);
                 return matchesRegion && matchesSearch;
             });
-
+            
             if (isNearMeMode && userLocation) {
                 filtered.forEach(eq => {
                     const coords = eq.geometry.coordinates;
-                    eq.distance = calculateDistance(userLocation.latitude, userLocation.longitude, coords[1], coords[0]);
+                    eq.distance = calculateDistance(
+                        userLocation.latitude, 
+                        userLocation.longitude, 
+                        coords[1], 
+                        coords[0]
+                    );
                 });
                 filtered.sort((a, b) => a.distance - b.distance);
-            } else if (sortMode === 'magnitude') {
-                filtered.sort((a, b) => (b.properties.mag || 0) - (a.properties.mag || 0));
             } else {
-                filtered.sort((a, b) => (b.properties.time || 0) - (a.properties.time || 0));
+                filtered.sort((a, b) => (b.properties.mag || 0) - (a.properties.mag || 0));
             }
-
-            liveCountEl.textContent = filtered.length;
-            displayStats(filtered);
-            displayInsights(filtered);
-            displayEarthquakes(filtered);
-            updateFilterSummary();
+            
+            updateStats(filtered);
+            updateMap(filtered);
+            updateList(filtered);
         }
-
-        function displayStats(list) {
+        
+        // Check if in Region
+        function isInRegion(lat, lon, region) {
+            if (region === 'global' || !regions[region]) return true;
+            const bounds = regions[region];
+            return lat >= bounds.minLat && lat <= bounds.maxLat && 
+                   lon >= bounds.minLon && lon <= bounds.maxLon;
+        }
+        
+        // Calculate Distance
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) ** 2 + 
+                      Math.cos(lat1 * Math.PI / 180) * 
+                      Math.cos(lat2 * Math.PI / 180) * 
+                      Math.sin(dLon/2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+        
+        // Update Stats
+        function updateStats(list) {
             if (!list.length) {
-                statsEl.innerHTML = `<div class="glass-pane p-6 text-center text-slate-300 md:col-span-2 xl:col-span-4">No telemetry for this combination.</div>`;
+                document.getElementById('statTotal').textContent = '0';
+                document.getElementById('statPeak').textContent = '0.0';
+                document.getElementById('statAvg').textContent = '0.0';
+                document.getElementById('statDepth').textContent = '0 km';
                 return;
             }
-            const magnitudes = list.map(e => e.properties.mag || 0);
+            
+            const mags = list.map(e => e.properties.mag || 0);
             const depths = list.map(e => e.geometry.coordinates[2] || 0);
-            const stats = [
-                { label: 'Events', value: list.length, detail: 'matching filters' },
-                { label: 'Peak magnitude', value: Math.max(...magnitudes).toFixed(1), detail: 'highest energy' },
-                { label: 'Average magnitude', value: (magnitudes.reduce((a,b)=>a+b,0) / magnitudes.length).toFixed(1), detail: 'dataset mean' },
-                { label: 'Average depth', value: `${(depths.reduce((a,b)=>a+b,0)/depths.length).toFixed(0)} km`, detail: 'focus depth' }
-            ];
-            statsEl.innerHTML = stats.map(stat => `
-                <div class="data-capsule">
-                    <span class="text-xs uppercase tracking-[0.3em] text-slate-400">${stat.label}</span>
-                    <span class="text-3xl font-semibold">${stat.value}</span>
-                    <span class="text-slate-400 text-sm">${stat.detail}</span>
-                </div>
-            `).join('');
+            
+            document.getElementById('statTotal').textContent = list.length;
+            document.getElementById('statPeak').textContent = Math.max(...mags).toFixed(1);
+            document.getElementById('statAvg').textContent = (mags.reduce((a,b) => a+b, 0) / mags.length).toFixed(1);
+            document.getElementById('statDepth').textContent = Math.round(depths.reduce((a,b) => a+b, 0) / depths.length) + ' km';
         }
-
-        function displayInsights(list) {
-            if (!list.length) {
-                insightsEl.innerHTML = `<div class="glass-pane p-4 text-center text-slate-300 md:col-span-3">Awaiting data...</div>`;
-                return;
-            }
-            const sortedByMag = [...list].sort((a,b)=>(b.properties.mag||0)-(a.properties.mag||0));
-            const sortedByTime = [...list].sort((a,b)=>(b.properties.time||0)-(a.properties.time||0));
-            const sortedByDepth = [...list].sort((a,b)=>(a.geometry.coordinates[2]||0)-(b.geometry.coordinates[2]||0));
-            const cards = [
-                { title: 'Strongest Pulse', highlight: `${(sortedByMag[0].properties.mag||0).toFixed(1)} Mw`, place: sortedByMag[0].properties.place || 'Unknown', meta: formatTime(sortedByMag[0].properties.time) },
-                { title: 'Newest Activity', highlight: formatRelative(sortedByTime[0].properties.time), place: sortedByTime[0].properties.place || 'Unknown', meta: `${(sortedByTime[0].properties.mag||0).toFixed(1)} Mw` },
-                { title: 'Shallow Trigger', highlight: `${sortedByDepth[0].geometry.coordinates[2]?.toFixed(1) || 0} km`, place: sortedByDepth[0].properties.place || 'Unknown', meta: `${(sortedByDepth[0].properties.mag||0).toFixed(1)} Mw` }
-            ];
-            insightsEl.innerHTML = cards.map(card => `
-                <article class="glass-pane p-5 rounded-2xl">
-                    <p class="text-xs uppercase tracking-[0.3em] text-slate-400">${card.title}</p>
-                    <h3 class="text-3xl font-semibold mt-2">${card.highlight}</h3>
-                    <p class="text-white/90">${card.place}</p>
-                    <p class="text-slate-400 text-sm">${card.meta}</p>
-                </article>
-            `).join('');
-        }
-
-        function displayEarthquakes(list) {
-            if (!list.length) {
-                contentEl.innerHTML = `<div class="glass-pane p-6 text-center text-slate-300">No earthquakes in this slice.</div>`;
-                return;
-            }
-            const layoutClass = viewMode === 'grid' ? 'grid gap-4 md:grid-cols-2' : 'space-y-4';
-            const cards = list.map(eq => {
-                const props = eq.properties;
+        
+        // Update Map
+        function updateMap(list) {
+            // Clear existing markers
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            if (!list.length) return;
+            
+            // Add new markers
+            list.forEach(eq => {
                 const coords = eq.geometry.coordinates;
-                const mag = props.mag || 0;
-                const distanceBlock = isNearMeMode && eq.distance !== undefined
-                    ? `<div><p class="text-xs text-slate-400">Proximity</p><p class="text-white">${eq.distance.toFixed(0)} km</p></div>`
-                    : `<div><p class="text-xs text-slate-400">Status</p><p class="text-white">${props.status || 'reviewed'}</p></div>`;
-                const intensityClass = mag < 4.5 ? 'from-emerald-500/30 to-emerald-400/10' : mag < 6 ? 'from-amber-500/30 to-orange-500/10' : 'from-rose-500/30 to-red-500/10';
+                const mag = eq.properties.mag || 0;
+                const place = eq.properties.place || 'Unknown';
+                
+                // Marker size and color based on magnitude
+                const radius = Math.max(mag * 2, 4);
+                const color = mag < 4.5 
+                    ? getComputedStyle(document.documentElement).getPropertyValue('--marker-light').trim()
+                    : mag < 6 
+                    ? getComputedStyle(document.documentElement).getPropertyValue('--marker-moderate').trim()
+                    : getComputedStyle(document.documentElement).getPropertyValue('--marker-strong').trim();
+                
+                const marker = L.circleMarker([coords[1], coords[0]], {
+                    radius: radius,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 1,
+                    opacity: 0.8,
+                    fillOpacity: 0.6
+                }).addTo(map);
+                
+                // Popup
+                const popupContent = `
+                    <div class="popup-magnitude" style="color: ${color};">${mag.toFixed(1)}</div>
+                    <div class="popup-location">${place}</div>
+                    <div class="popup-details">
+                        Depth: ${coords[2]?.toFixed(1) || 0} km<br>
+                        ${new Date(eq.properties.time).toLocaleString()}
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+                
+                markers.push(marker);
+            });
+            
+            // Fit map to markers
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+        
+        // Update List
+        function updateList(list) {
+            const listEl = document.getElementById('eqList');
+            filteredEarthquakes = list;
+            
+            if (!list.length) {
+                listEl.innerHTML = '<div class="loading"><p>No earthquakes found.</p></div>';
+                document.getElementById('loadMoreContainer').classList.add('hidden');
+                return;
+            }
+            
+            // Reset display count when filters change
+            currentDisplayCount = ITEMS_PER_PAGE;
+            renderList();
+        }
+        
+        // Render List with Pagination
+        function renderList() {
+            const listEl = document.getElementById('eqList');
+            const loadMoreContainer = document.getElementById('loadMoreContainer');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            
+            const itemsToShow = filteredEarthquakes.slice(0, currentDisplayCount);
+            
+            listEl.innerHTML = itemsToShow.map((eq, index) => {
+                const mag = eq.properties.mag || 0;
+                const magClass = mag < 4.5 ? 'mag-light' : mag < 6 ? 'mag-moderate' : 'mag-strong';
+                const coords = eq.geometry.coordinates;
+                
                 return `
-                    <article class="event-card" aria-label="Earthquake event">
-                        <div class="flex gap-4 items-start">
-                            <div class="timeline-dot mt-2"></div>
-                            <div class="flex-1 space-y-2">
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <p class="text-xs uppercase tracking-[0.3em] text-slate-400">${formatTime(props.time)}</p>
-                                    <span class="text-xs rounded-full px-3 py-1 border border-white/10">${props.type || 'earthquake'}</span>
-                                </div>
-                                <h3 class="text-2xl font-semibold">${props.place || 'Unknown location'}</h3>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                                    <div><p class="text-xs text-slate-400">Depth</p><p class="text-white">${coords[2]?.toFixed(1) || 0} km</p></div>
-                                    <div><p class="text-xs text-slate-400">Coordinates</p><p class="text-white">${coords[1].toFixed(2)}°, ${coords[0].toFixed(2)}°</p></div>
-                                    <div><p class="text-xs text-slate-400">Magnitude Type</p><p class="text-white">${props.magType || 'N/A'}</p></div>
-                                    ${distanceBlock}
-                                </div>
+                    <div class="eq-card" onclick="showEarthquakeDetails(${index})">
+                        <div class="eq-card-header">
+                            <div>
+                                <div class="eq-magnitude ${magClass}">${mag.toFixed(1)}</div>
                             </div>
-                            <div class="rounded-2xl px-4 py-2 bg-gradient-to-br ${intensityClass} text-right">
-                                <p class="text-3xl font-bold">${mag.toFixed(1)}</p>
-                                <p class="text-xs uppercase tracking-[0.3em]">${getIntensityLabel(mag)}</p>
-                            </div>
+                            <div class="eq-time">${formatRelative(eq.properties.time)}</div>
                         </div>
-                        <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400 mt-4">
-                            <span>ID: ${props.code || props.ids || 'N/A'}</span>
-                            ${props.url ? `<a href="${props.url}" target="_blank" class="text-sky-300">Detailed report →</a>` : ''}
+                        <div class="eq-location">${eq.properties.place || 'Unknown location'}</div>
+                        <div class="eq-details">
+                            <span>📍 ${coords[2]?.toFixed(1) || 0} km</span>
+                            <span>📊 ${eq.properties.magType || 'N/A'}</span>
+                            ${eq.distance !== undefined ? `<span>↔ ${eq.distance.toFixed(0)} km</span>` : ''}
                         </div>
-                    </article>
+                    </div>
                 `;
             }).join('');
-
-            contentEl.innerHTML = viewMode === 'grid' ? `<div class="${layoutClass}">${cards}</div>` : cards;
+            
+            // Show/hide Load More button
+            if (currentDisplayCount < filteredEarthquakes.length) {
+                loadMoreContainer.classList.remove('hidden');
+                const remaining = filteredEarthquakes.length - currentDisplayCount;
+                loadMoreBtn.textContent = `↓ Load More (${remaining} remaining)`;
+            } else {
+                loadMoreContainer.classList.add('hidden');
+            }
         }
-
-        function updateFilterSummary() {
-            const chips = [];
-            const timeText = document.getElementById('timeRange').selectedOptions[0].text;
-            const magText = document.getElementById('minMagnitude').selectedOptions[0].text;
-            const regionText = document.getElementById('region').selectedOptions[0].text;
-            chips.push(`Range: ${escapeHtml(timeText)}`);
-            chips.push(`Magnitude: ${escapeHtml(magText)}`);
-            chips.push(`Region: ${escapeHtml(regionText)}`);
-            if (searchInput.value) chips.push(`Search: ${escapeHtml(searchInput.value)}`);
-            chips.push(`Sort: ${sortMode === 'magnitude' ? 'Magnitude' : 'Recency'}`);
-            filterSummaryEl.innerHTML = chips.map(label => `<span class="chip">${label}</span>`).join('');
+        
+        // Fly to Earthquake on Map
+        function flyToEarthquake(lat, lon) {
+            map.flyTo([lat, lon], 8, {
+                duration: 1
+            });
         }
-
-        function formatTime(timestamp) {
-            if (!timestamp) return 'Unknown';
-            return new Date(timestamp).toLocaleString();
-        }
-
+        
+        // Format Relative Time
         function formatRelative(timestamp) {
             if (!timestamp) return 'Unknown';
             const diff = Date.now() - timestamp;
@@ -499,95 +1264,215 @@
             if (hours < 24) return `${hours}h ago`;
             return `${Math.floor(hours/24)}d ago`;
         }
-
-        function getIntensityLabel(mag) {
-            if (mag < 4.5) return 'Light';
-            if (mag < 6.0) return 'Moderate';
-            if (mag < 7.5) return 'Strong';
-            return 'Severe';
-        }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) ** 2;
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        }
-
-        function showLocationStatus(message, type = 'info') {
-            locationStatus.textContent = message;
-            locationStatus.classList.remove('hidden');
-            locationStatus.style.borderColor = type === 'success' ? 'rgba(74, 222, 128, 0.4)' : type === 'error' ? 'rgba(248, 113, 113, 0.4)' : 'var(--stroke)';
-            if (type !== 'error') {
-                setTimeout(() => locationStatus.classList.add('hidden'), 5000);
-            }
-        }
-
-        refreshBtn.addEventListener('click', () => fetchEarthquakes());
-        sortMagnitudeBtn.addEventListener('click', () => {
-            sortMode = 'magnitude';
-            sortMagnitudeBtn.classList.add('active');
-            sortRecencyBtn.classList.remove('active');
-            applyFilters();
-        });
-        sortRecencyBtn.addEventListener('click', () => {
-            sortMode = 'recency';
-            sortRecencyBtn.classList.add('active');
-            sortMagnitudeBtn.classList.remove('active');
-            applyFilters();
-        });
-        viewGridBtn.addEventListener('click', () => {
-            viewMode = 'grid';
-            viewGridBtn.classList.add('active');
-            viewListBtn.classList.remove('active');
-            applyFilters();
-        });
-        viewListBtn.addEventListener('click', () => {
-            viewMode = 'list';
-            viewListBtn.classList.add('active');
-            viewGridBtn.classList.remove('active');
-            applyFilters();
-        });
-        searchInput.addEventListener('input', () => applyFilters());
+        
+        // Event Listeners
+        document.getElementById('refreshBtn').addEventListener('click', fetchEarthquakes);
+        document.getElementById('timeRange').addEventListener('change', fetchEarthquakes);
+        document.getElementById('minMagnitude').addEventListener('change', fetchEarthquakes);
         document.getElementById('region').addEventListener('change', () => {
             isNearMeMode = false;
-            nearMeBtn.classList.remove('active');
+            document.getElementById('nearMeBtn').classList.remove('active');
             applyFilters();
         });
-        document.getElementById('timeRange').addEventListener('change', () => fetchEarthquakes());
-        document.getElementById('minMagnitude').addEventListener('change', () => fetchEarthquakes());
-
-        nearMeBtn.addEventListener('click', () => {
+        document.getElementById('searchTerm').addEventListener('input', applyFilters);
+        
+        document.getElementById('loadMoreBtn').addEventListener('click', () => {
+            currentDisplayCount += ITEMS_PER_PAGE;
+            renderList();
+        }
+        
+        // Show Earthquake Details Modal
+        function showEarthquakeDetails(index) {
+            const eq = filteredEarthquakes[index];
+            if (!eq) return;
+            
+            const props = eq.properties;
+            const coords = eq.geometry.coordinates;
+            const mag = props.mag || 0;
+            
+            // Update modal title
+            document.getElementById('modalTitle').textContent = props.place || 'Unknown Location';
+            
+            // Update details
+            const detailsHtml = `
+                <div class="eq-detail-item">
+                    <div class="detail-label">Magnitude</div>
+                    <div class="detail-value">${mag.toFixed(1)} ${props.magType || 'Mw'}</div>
+                </div>
+                <div class="eq-detail-item">
+                    <div class="detail-label">Depth</div>
+                    <div class="detail-value">${coords[2]?.toFixed(1) || 0} km</div>
+                </div>
+                <div class="eq-detail-item">
+                    <div class="detail-label">Time</div>
+                    <div class="detail-value">${new Date(props.time).toLocaleString()}</div>
+                </div>
+                <div class="eq-detail-item">
+                    <div class="detail-label">Status</div>
+                    <div class="detail-value">${props.status || 'reviewed'}</div>
+                </div>
+                <div class="eq-detail-item">
+                    <div class="detail-label">Coordinates</div>
+                    <div class="detail-value">${coords[1].toFixed(4)}°, ${coords[0].toFixed(4)}°</div>
+                </div>
+                <div class="eq-detail-item">
+                    <div class="detail-label">Event ID</div>
+                    <div class="detail-value">${props.code || props.ids || 'N/A'}</div>
+                </div>
+            `;
+            
+            document.getElementById('modalDetails').innerHTML = detailsHtml;
+            
+            // Show modal
+            document.getElementById('eqModal').classList.add('active');
+            
+            // Fetch news
+            fetchEarthquakeNews(props.place, mag, props.time);
+            
+            // Fly to location on map
+            flyToEarthquake(coords[1], coords[0]);
+        }
+        
+        // Close Modal
+        function closeEarthquakeModal() {
+            document.getElementById('eqModal').classList.remove('active');
+        }
+        
+        // Fetch Earthquake News
+        async function fetchEarthquakeNews(location, magnitude, timestamp) {
+            const newsContainer = document.getElementById('newsContainer');
+            newsContainer.innerHTML = `
+                <div class="news-loading">
+                    <div class="spinner"></div>
+                    <p>Loading news...</p>
+                </div>
+            `;
+            
+            try {
+                // Extract location keywords
+                const locationMatch = location?.match(/([A-Za-z\s]+)$/);
+                const searchLocation = locationMatch ? locationMatch[1].trim() : 'earthquake';
+                
+                // Search for earthquake news
+                const searchQuery = `earthquake ${searchLocation} magnitude ${magnitude.toFixed(1)}`;
+                
+                // Using News API (you'll need to get a free API key from newsapi.org)
+                // For demo purposes, I'll use a mock implementation
+                // Replace with actual API call when you have a key
+                
+                const response = await fetch(
+                    `https://newsapi.org/v2/everything?q=${encodeURIComponent(searchQuery)}&sortBy=publishedAt&pageSize=5&apiKey=YOUR_API_KEY_HERE`
+                );
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch news');
+                }
+                
+                const data = await response.json();
+                
+                if (!data.articles || data.articles.length === 0) {
+                    newsContainer.innerHTML = '<div class="news-loading"><p>No recent news articles found for this earthquake.</p></div>';
+                    return;
+                }
+                
+                newsContainer.innerHTML = data.articles.map(article => `
+                    <div class="news-article">
+                        <h4>${article.title}</h4>
+                        <p>${article.description || 'No description available.'}</p>
+                        <div class="news-meta">
+                            <span class="news-source">${article.source.name}</span>
+                            <a href="${article.url}" target="_blank" class="news-link">Read more →</a>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error fetching news:', error);
+                // Show fallback with general earthquake news search
+                newsContainer.innerHTML = `
+                    <div class="news-loading">
+                        <p>Unable to load news at this time.</p>
+                        <p style="margin-top: 0.5rem;">
+                            <a href="https://news.google.com/search?q=${encodeURIComponent(searchQuery)}" 
+                               target="_blank" 
+                               class="news-link">
+                               Search on Google News →
+                            </a>
+                        </p>
+                    </div>
+                `;
+            }
+        });
+        
+        document.getElementById('nearMeBtn').addEventListener('click', () => {
             if (isNearMeMode) {
                 isNearMeMode = false;
-                nearMeBtn.classList.remove('active');
-                showLocationStatus('Near-me mode disabled. Resuming global sort.', 'info');
+                document.getElementById('nearMeBtn').classList.remove('active');
                 applyFilters();
                 return;
             }
+            
             if (!navigator.geolocation) {
-                showLocationStatus('Geolocation unsupported in this browser.', 'error');
+                alert('Geolocation is not supported by your browser');
                 return;
             }
-            showLocationStatus('Acquiring location lock...', 'info');
+            
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    userLocation = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+                    userLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    };
                     isNearMeMode = true;
-                    nearMeBtn.classList.add('active');
-                    showLocationStatus(`Locked at ${userLocation.latitude.toFixed(2)}°, ${userLocation.longitude.toFixed(2)}°`, 'success');
+                    document.getElementById('nearMeBtn').classList.add('active');
+                    map.flyTo([userLocation.latitude, userLocation.longitude], 6);
                     applyFilters();
                 },
                 (error) => {
-                    showLocationStatus('Unable to retrieve location: ' + error.message, 'error');
+                    alert('Unable to retrieve your location: ' + error.message);
                 }
             );
         });
-
+        
+        // Settings Button Event Listeners
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsMenu = document.getElementById('settingsMenu');
+        
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsMenu.classList.toggle('active');
+        });
+        
+        // Close settings menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)) {
+                settingsMenu.classList.remove('active');
+            }
+        });
+        
+        // Theme option click handlers
+        document.querySelectorAll('.theme-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const theme = option.dataset.theme;
+                applyTheme(theme);
+                settingsMenu.classList.remove('active');
+            });
+        });
+        
+        // Listen to system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (currentTheme === 'system') {
+                applyTheme('system');
+            }
+        });
+        
+        // Initialize
+        initTheme();
+        initMap();
         fetchEarthquakes();
-        setInterval(() => fetchEarthquakes(false), 300000);
+        
+        // Auto-refresh every 5 minutes
+        setInterval(() => fetchEarthquakes(), 300000);
     </script>
 </body>
 </html>
