@@ -135,6 +135,14 @@
                     <div class="label">Avg Depth</div>
                     <div class="value" id="statDepth">0 km</div>
                 </div>
+                <div class="stat-card">
+                    <div class="label">Today</div>
+                    <div class="value" id="statToday">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">This Month</div>
+                    <div class="value" id="statMonth">0</div>
+                </div>
             </div>
             
             <!-- Earthquake List -->

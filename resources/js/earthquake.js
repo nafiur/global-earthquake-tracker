@@ -201,16 +201,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('statPeak').textContent = '0.0';
                 document.getElementById('statAvg').textContent = '0.0';
                 document.getElementById('statDepth').textContent = '0 km';
+                document.getElementById('statToday').textContent = '0';
+                document.getElementById('statMonth').textContent = '0';
                 return;
             }
             
             const mags = list.map(e => e.properties.mag || 0);
             const depths = list.map(e => e.geometry.coordinates[2] || 0);
+            const now = new Date();
             
             document.getElementById('statTotal').textContent = list.length;
             document.getElementById('statPeak').textContent = Math.max(...mags).toFixed(1);
             document.getElementById('statAvg').textContent = (mags.reduce((a,b) => a+b, 0) / mags.length).toFixed(1);
             document.getElementById('statDepth').textContent = Math.round(depths.reduce((a,b) => a+b, 0) / depths.length) + ' km';
+            
+            const todayCount = list.filter(eq => {
+                const date = new Date(eq.properties.time);
+                return date.getFullYear() === now.getFullYear() &&
+                       date.getMonth() === now.getMonth() &&
+                       date.getDate() === now.getDate();
+            }).length;
+            
+            const monthCount = list.filter(eq => {
+                const date = new Date(eq.properties.time);
+                return date.getFullYear() === now.getFullYear() &&
+                       date.getMonth() === now.getMonth();
+            }).length;
+            
+            document.getElementById('statToday').textContent = todayCount.toString();
+            document.getElementById('statMonth').textContent = monthCount.toString();
         }
         
         // Update Map
